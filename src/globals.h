@@ -91,6 +91,8 @@ extern uint32_t ff8_currentdisk;
 extern uint32_t frame_counter;
 extern uint32_t frame_rate;
 
+extern double movie_fps;
+
 extern double speedhack_current;
 
 extern bool xinput_connected;

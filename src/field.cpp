@@ -19,6 +19,7 @@ bool map_changing = false;
 
 // FF7 only
 int (*old_pc)();
+int (*old_ofst)();
 byte* current_entity_id;
 byte** level_data_pointer;
 short* pending_x;
@@ -43,6 +44,20 @@ typedef struct {
 	short x, y, z, res;		// short is a 2 byte signed integer
 } vertex_3s;
 
+byte get_field_parameter(int id)
+{
+	byte* ptr4 = (byte*)(field_array_1[*current_entity_id] + *field_ptr_1 + id + 1);
+
+	return *ptr4;
+}
+
+void set_field_parameter(int id, byte value)
+{
+	byte* ptr4 = (byte*)(field_array_1[*current_entity_id] + *field_ptr_1 + id + 1);
+
+	*ptr4 = value;
+}
+
 int script_PC_map_change() {
 	if (map_changing)
 	{
@@ -63,11 +78,12 @@ int script_PC_map_change() {
 	return old_pc();
 }
 
-byte get_field_parameter(int id)
+int script_OFST()
 {
-	byte* ptr4 = (byte*)(field_array_1[*current_entity_id] + *field_ptr_1 + id + 1);
+	if (ff7_externals.movie_object->is_playing)
+		set_field_parameter(9, get_field_parameter(9) * (movie_fps / 15.0f));
 
-	return *ptr4;
+	return old_ofst();
 }
 
 void field_init()
@@ -77,6 +93,9 @@ void field_init()
 		// Proxies the PC field opcode to reposition the player after a forced map change
 		old_pc = (int (*)())common_externals.execute_opcode_table[0xA0];
 		patch_code_dword((uint32_t)&common_externals.execute_opcode_table[0xA0], (DWORD)&script_PC_map_change);
+
+		old_ofst = (int (*)())common_externals.execute_opcode_table[0xC3];
+		patch_code_dword((uint32_t)&common_externals.execute_opcode_table[0xC3], (DWORD)&script_OFST);
 
 		uint32_t main_loop = ff7_externals.cdcheck + 0xF3;
 		uint32_t field_main_loop = get_absolute_value(main_loop, 0x8F8); // 0x60E5B7
